@@ -43,52 +43,20 @@ function App() {
 
     setLoading(true);
     try {
-      // Call Replicate API for Real-ESRGAN image upscaling
-      const response = await fetch('https://api.replicate.com/v1/predictions', {
+      const response = await fetch('/api/enhance', {
         method: 'POST',
-        headers: {
-          'Authorization': `Token ${import.meta.env.VITE_REPLICATE_API_TOKEN}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          version: 'f121d640bd286e1fdc67f9799164c1d5be36ff74576ee11c803ae5b665dd46aa',
-          input: {
-            image: image,
-            scale: 4,
-            face_enhance: false
-          }
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image })
       });
 
       if (!response.ok) {
-        throw new Error('Failed to start enhancement');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to start enhancement');
       }
 
-      let prediction = await response.json();
-      
-      // Poll the API until the prediction is complete
-      while (prediction.status !== 'succeeded' && prediction.status !== 'failed') {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        const statusResponse = await fetch(
-          `https://api.replicate.com/v1/predictions/${prediction.id}`,
-          {
-            headers: { 'Authorization': `Token ${import.meta.env.VITE_REPLICATE_API_TOKEN}` }
-          }
-        );
-        
-        if (!statusResponse.ok) {
-          throw new Error('Failed to check status');
-        }
-        
-        prediction = await statusResponse.json();
-      }
-
-      if (prediction.status === 'succeeded' && prediction.output) {
-        const outputImage = Array.isArray(prediction.output)
-          ? prediction.output[0]
-          : prediction.output;
-        setEnhancedImage(outputImage);
+      const data = await response.json();
+      if (data.output) {
+        setEnhancedImage(data.output);
         toast.success('🎉 Image enhanced successfully with AI!');
       } else {
         toast.error('❌ Enhancement failed');
