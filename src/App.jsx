@@ -85,7 +85,10 @@ function App() {
       }
 
       if (prediction.status === 'succeeded' && prediction.output) {
-        setEnhancedImage(prediction.output);
+        const outputImage = Array.isArray(prediction.output)
+          ? prediction.output[0]
+          : prediction.output;
+        setEnhancedImage(outputImage);
         toast.success('🎉 Image enhanced successfully with AI!');
       } else {
         toast.error('❌ Enhancement failed');
